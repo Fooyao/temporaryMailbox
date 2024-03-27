@@ -67,7 +67,11 @@ var htmlIndex = `<!DOCTYPE html>
 <body>
     <h1>随机邮箱生成器</h1>
     <div class="buttons">
-        <button id="getRandom" >获取随机邮件地址</button>
+    <select id="domainSelect">
+            <!-- 域名选项将动态添加到这里 -->
+        </select>
+	<input type="text" id="username" placeholder="自定义用户名">
+        <button id="getRandom">获取自定义邮件地址</button>
         <button id="getMailList" >获取邮件列表</button>
         <button id="getMail" >获取邮件</button>
       </div>
@@ -77,16 +81,28 @@ var htmlIndex = `<!DOCTYPE html>
     <script>
         let randomMailAddress = ''; // 保存随机邮件地址
 
-        // 获取随机邮件地址
-        document.getElementById('getRandom').addEventListener('click', function() {
-            // 调用后端接口，这里假设使用 fetch
-            fetch('/getAddress')
+ 	window.onload = function() {
+            fetch('/getAllowedDomains')
                 .then(response => response.json())
                 .then(data => {
-                    randomMailAddress = data.random; // 保存随机邮件地址
-                    document.getElementById('randomAddress').innerText = '随机邮件地址: ' + data.address;
+                    const select = document.getElementById('domainSelect');
+                    data.domains.forEach(domain => {
+                        const option = document.createElement('option');
+                        option.value = domain;
+                        option.innerText = domain;
+                        select.appendChild(option);
+                    });
                 })
                 .catch(error => console.error('Error:', error));
+        };
+
+        // 获取随机邮件地址
+        document.getElementById('getRandom').addEventListener('click', function() {
+	    const selectedDomain = document.getElementById('domainSelect').value;
+     	    const username = document.getElementById('username').value;
+     		
+            randomMailAddress = username + '@' + selectedDomain; // 保存随机邮件地址
+            document.getElementById('randomAddress').innerText = '随机邮件地址: ' + randomMailAddress;
         });
 
         // 获取邮件列表
@@ -143,14 +159,22 @@ func RandStringRunes(n int) string {
 	}
 	return string(b)
 }
-func startHTTPServer(Domain string) {
+func startHTTPServer(allowedDomains []string) {
 	httpsrv := gin.New()
 	httpsrv.GET("/", func(c *gin.Context) {
 		c.Header("Content-Type", "text/html; charset=utf-8")
 		c.String(200, htmlIndex)
 	})
+	httpsrv.GET("/getAllowedDomains", func(c *gin.Context) {
+		tmp := RandStringRunes(8)
+		c.JSON(200, gin.H{
+			"allowedDomains":  allowedDomains
+		})
+	})
 	httpsrv.GET("/getAddress", func(c *gin.Context) {
 		tmp := RandStringRunes(8)
+		randomIndex := rand.Intn(len(allowedDomains))
+		Domain := allowedDomains[randomIndex]
 		c.JSON(200, gin.H{
 			"random":  tmp,
 			"address": tmp + "@" + Domain,
