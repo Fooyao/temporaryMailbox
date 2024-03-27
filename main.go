@@ -3,9 +3,11 @@ package main
 import "os"
 
 var mailBox = make(map[string][]mailContent)
-var subDomain = os.Getenv("SUBDOMAIN")
+var allowedDomains []string
 
 func main() {
-	go startHTTPServer(subDomain)
-	startSMTPServer(subDomain)
+	domainsEnv := os.Getenv("ALLOWED_DOMAINS")
+    	allowedDomains = strings.Split(domainsEnv, ",")
+	go startHTTPServer(allowedDomains)
+	startSMTPServer(allowedDomains)
 }
