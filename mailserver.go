@@ -17,12 +17,11 @@ func handler(c *smtpsrv.Context) error {
 	UserMail := c.To().String()
 	UserMail = strings.Trim(UserMail, "<>")
 	st := strings.Split(UserMail, "@")
-	s := st[0]
 	domain := st[1]
 
 	// 检查域名是否在允许的域名列表中
 	if !contains(allowedDomains, domain) {
-	    return fmt.Errorf("Invalid domain")
+		return fmt.Errorf("invalid domain")
 	}
 
 	// msg, _ := mail.ReadMessage(c)
@@ -32,10 +31,10 @@ func handler(c *smtpsrv.Context) error {
 		title:   msg.Subject,
 		content: msg.TextBody,
 	}
-	if mailBox[s] == nil {
-		mailBox[s] = make([]mailContent, 0)
+	if mailBox[UserMail] == nil {
+		mailBox[UserMail] = make([]mailContent, 0)
 	}
-	mailBox[s] = append(mailBox[s], content)
+	mailBox[UserMail] = append(mailBox[UserMail], content)
 	return nil
 }
 func startSMTPServer(allowedDomains []string) {
@@ -48,10 +47,10 @@ func startSMTPServer(allowedDomains []string) {
 	fmt.Println(smtpsrv.ListenAndServe(&cfg))
 }
 func contains(slice []string, item string) bool {
-    for _, s := range slice {
-        if s == item {
-            return true
-        }
-    }
-    return false
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
 }
