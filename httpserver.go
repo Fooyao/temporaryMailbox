@@ -6,7 +6,8 @@ import (
 )
 
 var letterRunes = []rune("abcdefghijklmnopqrstuvwxyz1234567890")
-var htmlIndex = `<!DOCTYPE html>
+var htmlIndex = `
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
@@ -14,10 +15,10 @@ var htmlIndex = `<!DOCTYPE html>
     <title>随机邮箱生成器</title>
     <style>
         body {
-            font-family: 'Arial', sans-serif;
-            background-color: #f0f0f0;
+            font-family: 'Segoe UI', 'Roboto', sans-serif;
+            background-color: #f2f4f8;
             margin: 0;
-            padding: 0;
+            padding: 20px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -26,67 +27,74 @@ var htmlIndex = `<!DOCTYPE html>
         }
 
         h1 {
-            color: #333;
+            color: #204056;
         }
 
         .buttons {
             margin-top: 20px;
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
         }
 
         button {
             padding: 10px 20px;
-            margin: 0 10px;
             font-size: 16px;
             cursor: pointer;
             background-color: #4CAF50;
             color: white;
             border: none;
             border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
         button:hover {
-            background-color: #45a049;
-        }
-        #randomAddress {
-            margin-top: 20px;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            background-color: #fff;
+            background-color: #368f3a;
         }
 
-        #result {
+        #domainSelect, #username {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
+
+        #randomAddress, #result {
             margin-top: 20px;
             padding: 10px;
-            border: 1px solid #ddd;
+            border: 1px solid #bbb;
             border-radius: 5px;
             background-color: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 600px;
+            word-break: break-word;
         }
     </style>
 </head>
 <body>
-    <h1>随机邮箱生成器</h1>
-    <div class="buttons">
-    <select id="domainSelect">
+    <h1><a href="https://hdd.cm">号多多hdd.cm|推特低至2毛</a></h1>
+	<div class="buttons">
+        <select id="domainSelect">
             <!-- 域名选项将动态添加到这里 -->
         </select>
-	<input type="text" id="username" placeholder="自定义用户名">
-        <button id="getRandom">获取自定义邮件地址</button>
-        <button id="getMailList" >获取邮件列表</button>
-        <button id="getMail" >获取邮件</button>
-      </div>
+        <input type="text" id="username" placeholder="自定义用户名">
+        <button id="getRandom">获取邮箱</button>
+        <button id="getMailList">获取邮件列表</button>
+        <button id="getMail">获取邮件</button>
     </div>
-        <div id="randomAddress"></div>
+    <div id="randomAddress"></div>
     <div id="result"></div>
+
     <script>
         let randomMailAddress = ''; // 保存随机邮件地址
 
  	window.onload = function() {
-            fetch('/getAllowedDomains')
+            fetch('` + mainDomain + `/getAllowedDomains')
                 .then(response => response.json())
                 .then(data => {
                     const select = document.getElementById('domainSelect');
-                    data.domains.forEach(domain => {
+                    data.allowedDomains.forEach(domain => {
                         const option = document.createElement('option');
                         option.value = domain;
                         option.innerText = domain;
@@ -102,7 +110,7 @@ var htmlIndex = `<!DOCTYPE html>
      	    const username = document.getElementById('username').value;
      		
             randomMailAddress = username + '@' + selectedDomain; // 保存随机邮件地址
-            document.getElementById('randomAddress').innerText = '随机邮件地址: ' + randomMailAddress;
+            document.getElementById('randomAddress').innerText = '邮件地址: ' + randomMailAddress;
         });
 
         // 获取邮件列表
@@ -112,11 +120,9 @@ var htmlIndex = `<!DOCTYPE html>
                 return;
             }
 
-            // 调用后端接口，这里假设使用 fetch
-            fetch(` + "`/getMailList/${randomMailAddress}`" + `)
+            fetch('` + mainDomain + `/getMailList/${randomMailAddress}')
                 .then(response => response.json())
                 .then(data => {
-                    // 假设展示第一封邮件的标题
                     document.getElementById('result').innerHTML = '';
                     if(data.mails.length==0){
                         document.getElementById('result').innerText = '邮件还没收到，耐心等一下哦';
@@ -140,7 +146,7 @@ else{
             }
 
             // 调用后端接口，这里假设使用 fetch
-            fetch(` + "`/getMail/${randomMailAddress}`" + `)
+            fetch('` + mainDomain + `/getMail/${randomMailAddress}')
                 .then(response => response.json())
                 .then(data => {
                     // 假设展示邮件内容
@@ -150,7 +156,8 @@ else{
         });
     </script>
 </body>
-</html>`
+</html>
+`
 
 func RandStringRunes(n int) string {
 	b := make([]rune, n)
@@ -160,15 +167,15 @@ func RandStringRunes(n int) string {
 	return string(b)
 }
 func startHTTPServer(allowedDomains []string) {
-	httpsrv := gin.New()
+	gin.SetMode(gin.ReleaseMode)
+	httpsrv := gin.Default()
 	httpsrv.GET("/", func(c *gin.Context) {
 		c.Header("Content-Type", "text/html; charset=utf-8")
 		c.String(200, htmlIndex)
 	})
 	httpsrv.GET("/getAllowedDomains", func(c *gin.Context) {
-		tmp := RandStringRunes(8)
 		c.JSON(200, gin.H{
-			"allowedDomains":  allowedDomains
+			"allowedDomains": allowedDomains,
 		})
 	})
 	httpsrv.GET("/getAddress", func(c *gin.Context) {
@@ -219,5 +226,12 @@ func startHTTPServer(allowedDomains []string) {
 			})
 		}
 	})
-	httpsrv.Run(":80")
+	err := httpsrv.RunTLS(":443", "./certs/server.pem", "./certs/server.key")
+	if err != nil {
+		return
+	}
+	err = httpsrv.Run(":80")
+	if err != nil {
+		return
+	}
 }
